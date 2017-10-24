@@ -65,6 +65,7 @@ class Simulator:
     self.accSignal = 0
     self.turnSignal = 0
     self.signalGameFeedback = Event()
+    self.signalPlayerReady = Event()
     self.lock = Lock()
     self.bufferFeedback = bytearray()
     self.signalShutdown = Event()
@@ -250,10 +251,16 @@ class Simulator:
     
     with self.lock:
       self.bufferFeedback = data
+    if isEnd:
+      self.signalPlayerReady.clear()
     self.signalGameFeedback.set()
+
     # Make sure last frame of an episode is processed.
     if isEnd:
-      sleep(1)
+      while True:
+        if not self.signalPlayerReady.wait(1):
+          continue
+        break
 
 def communicationThread(simulator):
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -279,6 +286,7 @@ def communicationThread(simulator):
       bufferLocal[:] = simulator.bufferFeedback
     clientSock.send(bufferLocal)
     action = struct.unpack('I', clientSock.recv(struct.calcsize('I')))[0]
+    simulator.signalPlayerReady.set()
     if action == ACCELERATE:
       simulator.accSignal = 1
       simulator.turnSignal = 0
