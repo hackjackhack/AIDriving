@@ -134,8 +134,7 @@ class Simulator:
 
   def reset(self):
     self.episodeCounter += 1
-    #if self.recordVideo and self.episodeCounter in RECORDING_EPISODES:
-    if self.recordVideo:
+    if self.recordVideo and self.episodeCounter in RECORDING_EPISODES:
       subprocess.Popen(['avconv',
                         '-f', 'x11grab',
                         '-r', '20',
